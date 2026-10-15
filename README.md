@@ -51,7 +51,7 @@ Pensado para correr **solo en tu PC**. Antes de usarlo en otro lado, tené en cu
 
 ## Licencia
 
-Los archivos de este repositorio (flujos, `docker-compose.yml`, guía) se publican bajo la **[PolyForm Noncommercial 1.0.0](LICENSE)**: podés usarlos, copiarlos y modificarlos para **uso personal, educativo o sin fines comerciales**. Para otros usos, consultá con el autor.
+Los archivos de este repositorio (flujos, `docker-compose.yml`, guía) se publican bajo la **[PolyForm Internal Use 1.0.0](LICENSE)**: podés usarlos y modificarlos para las **operaciones internas de tu negocio**. **No** podés redistribuirlos ni ofrecerlos a terceros como producto o servicio. Para otros usos, consultá con el autor.
 
 Este repositorio **no incluye** el código de n8n ni de LobeChat: el `docker-compose.yml` descarga sus imágenes oficiales. Cada componente conserva su propia licencia, que **debés respetar vos** al usarlo:
 
