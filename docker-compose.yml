@@ -1,0 +1,196 @@
+volumes:
+  n8n_data:
+  postgres_data:
+  # Volumenes dedicados a LobeChat (aislados de n8n/aura).
+  lobe_postgres_data:
+  lobe_redis_data:
+  lobe_rustfs_data:
+
+services:
+  postgres:
+    # Imagen con la extension pgvector preinstalada (necesaria para los
+    # embeddings vector(1536) que venian de Supabase).
+    image: pgvector/pgvector:pg16
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Scripts de inicializacion: se ejecutan SOLO la primera vez, cuando el
+      # volumen postgres_data esta vacio. Crean y restauran la base 'aura'.
+      - ./db_init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Puerto expuesto en localhost para inspeccionar la BD con un cliente
+    # (DBeaver, psql, pgAdmin). Solo escucha en 127.0.0.1 para no exponerlo
+    # a la red externa.
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    restart: always
+    environment:
+      # Conexión a la base de datos [6]
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      
+      # Seguridad y Zona Horaria [5, 8]
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - TZ=${TZ}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      # montaje local (bind mount)
+      - ./n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      # default: red donde vive su propio postgres (hostname "postgres").
+      - default
+      # lobe-network: para que LobeChat pueda llamarlo por nombre (http://n8n:5678).
+      - lobe-network
+
+  # ==========================================================================
+  # ============================ LobeChat / LobeHub ==========================
+  # ==========================================================================
+  # Interfaz de chat local (Next.js). Unico servicio de LobeChat expuesto para
+  # uso normal: http://localhost:3210
+  lobe:
+    image: lobehub/lobehub
+    container_name: lobehub
+    restart: always
+    ports:
+      - "127.0.0.1:${LOBE_PORT}:3210"
+    depends_on:
+      lobe-postgres:
+        condition: service_healthy
+      lobe-redis:
+        condition: service_healthy
+      lobe-rustfs:
+        condition: service_healthy
+      lobe-rustfs-init:
+        condition: service_completed_successfully
+    environment:
+      - KEY_VAULTS_SECRET=${KEY_VAULTS_SECRET}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - APP_URL=${APP_URL}
+      - INTERNAL_APP_URL=${INTERNAL_APP_URL}
+      # Conexion al Postgres dedicado de LobeChat (servicio lobe-postgres).
+      - DATABASE_URL=postgresql://postgres:${LOBE_POSTGRES_PASSWORD}@lobe-postgres:5432/${LOBE_DB_NAME}
+      # Almacenamiento S3 (RustFS).
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_BUCKET=${RUSTFS_LOBE_BUCKET}
+      - S3_ENABLE_PATH_STYLE=1
+      - S3_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
+      - S3_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY}
+      - S3_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY}
+      - S3_SET_ACL=0
+      - LLM_VISION_IMAGE_USE_BASE64=1
+      # Redis (cache/estado).
+      - REDIS_URL=redis://lobe-redis:6379
+      - REDIS_PREFIX=lobechat
+      - REDIS_TLS=0
+    networks:
+      # lobe-network: para hablar con sus propios servicios (postgres/redis/rustfs).
+      # default: red del proyecto donde viven n8n y su postgres, para que
+      # LobeChat pueda llamar a n8n por nombre (http://n8n:5678/...).
+      - lobe-network
+      - default
+
+  # Postgres dedicado a LobeChat, con pgvector + pg_search (imagen ParadeDB).
+  # Aislado de tu Postgres de n8n/aura: volumen propio y puerto NO expuesto.
+  lobe-postgres:
+    image: paradedb/paradedb:latest-pg17
+    container_name: lobe-postgres
+    restart: always
+    command: ["postgres", "-c", "shared_preload_libraries=pg_search"]
+    environment:
+      - POSTGRES_DB=${LOBE_DB_NAME}
+      - POSTGRES_PASSWORD=${LOBE_POSTGRES_PASSWORD}
+    volumes:
+      - lobe_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lobe-network
+
+  # Cache Redis para LobeChat. Puerto NO expuesto al host.
+  lobe-redis:
+    image: redis:7-alpine
+    container_name: lobe-redis
+    restart: always
+    command: redis-server --save 60 1000 --appendonly yes
+    volumes:
+      - lobe_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lobe-network
+
+  # Almacenamiento de objetos S3 (RustFS). Se exponen 9000 (necesario para
+  # subir imagenes al chat desde el navegador) y 9001 (panel de administracion).
+  lobe-rustfs:
+    image: rustfs/rustfs:latest
+    container_name: lobe-rustfs
+    restart: always
+    ports:
+      - "127.0.0.1:${RUSTFS_PORT}:9000"
+      - "127.0.0.1:${RUSTFS_ADMIN_PORT}:9001"
+    environment:
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}
+    volumes:
+      - lobe_rustfs_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    command:
+      ["--access-key", "${RUSTFS_ACCESS_KEY}", "--secret-key", "${RUSTFS_SECRET_KEY}", "/data"]
+    networks:
+      - lobe-network
+
+  # Job de inicializacion: crea el bucket 'lobe' y le aplica la politica de
+  # lectura publica. Corre una sola vez y termina.
+  lobe-rustfs-init:
+    # minio/mc ya no se publica en Docker Hub; se usa aws-cli (RustFS es S3-compatible).
+    image: amazon/aws-cli:latest
+    container_name: lobe-rustfs-init
+    depends_on:
+      lobe-rustfs:
+        condition: service_healthy
+    volumes:
+      - ./bucket.config.json:/bucket.config.json:ro
+    environment:
+      - AWS_ACCESS_KEY_ID=${RUSTFS_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${RUSTFS_SECRET_KEY}
+      - AWS_DEFAULT_REGION=us-east-1
+    entrypoint: /bin/sh
+    command: -c ' set -eux; (aws --endpoint-url http://lobe-rustfs:9000 s3api head-bucket --bucket "${RUSTFS_LOBE_BUCKET}" || aws --endpoint-url http://lobe-rustfs:9000 s3 mb "s3://${RUSTFS_LOBE_BUCKET}"); aws --endpoint-url http://lobe-rustfs:9000 s3api put-bucket-policy --bucket "${RUSTFS_LOBE_BUCKET}" --policy file:///bucket.config.json; '
+    restart: "no"
+    networks:
+      - lobe-network
+
+networks:
+  lobe-network:
+    driver: bridge

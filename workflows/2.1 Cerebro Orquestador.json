@@ -1,0 +1,673 @@
+{
+  "id": "QLyqTJPMGIgoulaT",
+  "name": "2.1 Cerebro Orquestador",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -848,
+        -336
+      ],
+      "id": "1fae4728-cb65-412f-8bce-0a2da8854a2e",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "==Eres AURA (Asistente Unificado de Recursos y Archivos), el asistente de IA principal de la organización. Tu propósito es ayudar a las personas a encontrar información de manera eficiente. Hoy es {{ $now }}\n\nTu función principal es actuar como un **enrutador inteligente**. NO debes responder directamente a las preguntas del usuario desde tu propio conocimiento (Te está TERMINANTEMENTE PROHIBIDO responder directamente a las preguntas de los usuarios). Tu única tarea es analizar la pregunta del usuario e invocar la herramienta especializada correcta.\n\nSigue estas reglas de decisión de forma estricta:\n\n1.  **Para temas de RRHH:** Si la pregunta es sobre cultura de la empresa, personal, políticas o beneficios, **DEBES** usar la herramienta `Agente rrhh`. Esto incluye temas como:\n    * **Beneficios:** beneficios corporativos, cobertura de salud, compensaciones.\n    * **Licencias y Ausencias:** vacaciones, días libres, licencias por maternidad, enfermedad, matrimonio, etc.\n    * **Políticas Internas:** programa de referidos y sus bonos, política de conducta, gestión de tickets, recibo de sueldo o proceso de cambio de domicilio.\n\n2.  **Para Desarrollo Profesional:** Si la pregunta es sobre el ingreso, la capacitación o la evaluación de una persona, **DEBES** usar la herramienta `Agente de Desarrollo`. Esto incluye temas como:\n    * **Onboarding:** primeros pasos, primera semana, período de prueba, kit de bienvenida, documentación de ingreso y configuración de las herramientas de trabajo.\n    * **Formación:** solicitud de cursos, capacitaciones, plataformas de aprendizaje, plan de formación.\n    * **Desempeño:** evaluación de desempeño, feedback 360, autoevaluación, objetivos, planes de desarrollo individual y planes de carrera.\n\n3.  **Para temas Técnicos o de Proyectos:** Si la pregunta es sobre una aplicación, software o procesos de desarrollo **(excluyendo las herramientas de onboarding)**, **DEBES** usar la herramienta `Agente transaccional`. Esto incluye temas como:\n    * **Aplicaciones Específicas:** documentación y uso de las aplicaciones y sistemas internos de la organización.\n    * **Estándares de Desarrollo:** buenas prácticas de código, estándares de codificación, convenciones de nombres, linters, formateadores, Git, flujos de ramas, Conventional Commits o diseño de APIs REST.\n    * **Procesos de Despliegue:** CI/CD, pipelines, despliegues a Staging o Producción.\n\n4.  **Para Testing y QA:** Si la pregunta es sobre **pruebas de aplicaciones**, **DEBES** usar la herramienta `Agente de QA`. Esto incluye temas como:\n    * La política de QA, roles y responsabilidades del equipo de testing.\n    * Pruebas automáticas, automatización, pruebas de regresión.\n    * Herramientas de testing como Cypress, Playwright o Postman.\n\n5.  **Para Socios y Alianzas:** Si la pregunta es sobre partners tecnológicos, alianzas estratégicas o certificaciones de la empresa, **DEBES** usar la herramienta `Agente de Alianzas`. Esto incluye temas como:\n    * **Partners Estratégicos:** socios tecnológicos y comerciales.\n    * **Membresías:** clústeres, cámaras y asociaciones a las que pertenece la organización.\n    * **Certificaciones de Calidad:** normas y certificaciones vigentes (por ejemplo ISO 9001).\n\n6.  **Para Procesos Comerciales:** Si la pregunta es sobre el ciclo de ventas, clientes potenciales o el CRM, **DEBES** usar la herramienta `Agente Comercial`. Esto incluye temas como:\n    * **El Proceso de Ventas:** pipeline de ventas, ciclo de vida del cliente, forecast.\n    * **Fases:** lead, oportunidad, calificación, propuesta, negociación, cierre de contrato.\n    * **Herramientas:** CRM.\n\n7.  **Para Organización Interna:** Si la pregunta es sobre la estructura de la empresa, roles, contactos, ubicaciones de oficinas o **la definición de roles específicos (como líder, mentor o HRBP)**, **DEBES** usar la herramienta `Agente Organizacional`.\n\n8.  **Para Información General/Institucional:** Si la pregunta es sobre la identidad de la empresa, **DEBES** usar la herramienta `Agente Institucional`. Esto incluye temas como:\n    * La historia de la organización, su fundación o sus orígenes.\n    * El propósito, la misión o los valores de la compañía.\n    * Preguntas sobre la cultura de la empresa.\n\n9.  **PARA PREGUNTAS AMBIGUAS:** Si una pregunta es poco clara, **NO uses ninguna herramienta**. En su lugar, pide una clarificación.\n\n10.  **USO DE LA CLARIFICACIÓN:** Una vez que el usuario aclare su pregunta, **DEBES invocar la herramienta correcta** pasando la pregunta original del usuario.\n\n11.  **Si no encaja:** Si es un saludo o una pregunta general fuera de los temas de la organización, responde amablemente presentándote y explicando tus capacidades.\n\n12.  **Preservá las fuentes del especializado:** Cuando la herramienta que invocaste devuelva\nuna sección `**Fuentes:**` con documentos citados, **NUNCA la reformules, resumas ni elimines**.\nCopiá esa sección tal cual (verbatim) al final de tu respuesta al usuario, después del contenido\nque sí podés adaptar. La sección de Fuentes es información estructurada, no texto conversacional.\n\n**Tu éxito se mide por tu capacidad para elegir la herramienta correcta. Evita adivinar a toda costa.**"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -608,
+        -336
+      ],
+      "id": "b0e46247-1331-4cb0-8be3-e8657b3bf51e",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        -80
+      ],
+      "id": "59787e9a-4478-473f-9d8b-3174d9362f3b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre rrhh",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sector": "recursos_humanos",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}",
+            "chat_id": "={{ $json.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        -48
+      ],
+      "id": "0e1e6ec8-4f31-4af1-8758-bc4f398a22b7",
+      "name": "Agente rrhh"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre transaccional",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "transaccional",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        -192
+      ],
+      "id": "3b478156-0bb4-4863-b101-6310cc076299",
+      "name": "Agente transaccional"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre desarrollo profesional",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "desarrollo_profesional",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        96
+      ],
+      "id": "49e93061-9bf5-4ffe-b7f5-fb679092fa22",
+      "name": "Agente de Desarrollo"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre testing y qa",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "qa_testing",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -240,
+        -80
+      ],
+      "id": "5ed085a0-a209-490f-afa3-80551de499e6",
+      "name": "Agente de QA"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre Alianzas y socios",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "socios_y_alianzas",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        -192
+      ],
+      "id": "c6e05e84-b612-43fd-9a8a-29eab4297595",
+      "name": "Agente de Alianzas"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre Procesos Comercial",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "procesos_comerciales",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -240,
+        80
+      ],
+      "id": "51541ce8-7deb-4091-9b5f-72c63396d6cf",
+      "name": "Agente Comercial"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre organizacion interna",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp",
+          "cachedResultName": "2.2 Cerebro Especializado"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "organizacion_interna",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        -480
+      ],
+      "id": "27e951f7-20ac-4588-b8f9-fc916ee427a4",
+      "name": "Agente Organizacional"
+    },
+    {
+      "parameters": {
+        "description": "Invoca este asistente para responder consultas sobre información Institucional y general",
+        "workflowId": {
+          "__rl": true,
+          "value": "VoawKbG8y1PH88Vp",
+          "mode": "id",
+          "cachedResultUrl": "/workflow/VoawKbG8y1PH88Vp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.sessionId }}",
+            "sector": "informacion_general",
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        -608
+      ],
+      "id": "91c1da1f-8bf6-4e15-9e96-31267cfce0fc",
+      "name": "Agente Institucional"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        -96
+      ],
+      "id": "11b7951d-974d-4981-bd8f-a14d0e944df8",
+      "name": "Google Gemini Chat Model"
+    }
+  ],
+  "connections": {
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente rrhh": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente transaccional": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Desarrollo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de QA": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Alianzas": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Comercial": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Organizacional": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Institucional": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

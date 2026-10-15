@@ -1,0 +1,20 @@
+# Secretos y datos locales: NUNCA subir
+.env
+.env.*
+!.env.example
+credentials.md
+*.pem
+*.key
+# Llave JSON de la cuenta de servicio de Google
+*service-account*.json
+*-key.json
+# Datos y volúmenes locales
+n8n_data/
+aura_data/
+*.dump
+*.backup
+*.backup.gz
+*.sql.gz
+# Sistema
+.DS_Store
+Thumbs.db

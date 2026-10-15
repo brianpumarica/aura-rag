@@ -1,0 +1,1203 @@
+{
+  "id": "ip8dH5AVXB0b0cGh",
+  "name": "3.1 - Sincronizador y Limpiador",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "PEGAR_ID_CARPETA_DRIVE"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {
+          "fields": [
+            "mimeType",
+            "id",
+            "name"
+          ]
+        },
+        "authentication": "serviceAccount"
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -928,
+        416
+      ],
+      "id": "8b27fb34-8be2-45f0-9fa3-b936a3a4be02",
+      "name": "Conocimiento",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Crear tabla de sectores (contiene todos los sectores)\ncreate table if not exists sectors (\n  id text primary key,\n  title text\n);\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1136,
+        416
+      ],
+      "id": "92f608ff-6e32-4e8b-afca-54e9f03d2fc7",
+      "name": "Crear sectors",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "27c8a97a-fc43-4831-814e-a3aedd3de94e",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "258bc7c0-c149-4eb5-81ba-36d1735c8b1b",
+              "name": "sector",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da8a5e63-9c99-4bcf-962d-b179dbcb3272",
+      "name": "Sector a actualizar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": "={{ $prevNode.name === 'Conocimiento' }}"
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -688,
+        416
+      ],
+      "id": "46f20616-eb48-41fb-a9da-6ffbc8e807cd",
+      "name": "Loop Over Items5"
+    },
+    {
+      "parameters": {
+        "content": "## RAG - Detecta todo el conocimiento",
+        "height": 80,
+        "width": 1112,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1392,
+        320
+      ],
+      "typeVersion": 1,
+      "id": "08e5a243-8d93-40bd-8770-5f9dcbb0b751",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## RAG - Elimina sectores no usados",
+        "height": 80,
+        "width": 1720,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "a520d50f-6dfc-4a15-9366-f51f80f568ef",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "sectors",
+          "mode": "list",
+          "cachedResultName": "sectors"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        112,
+        96
+      ],
+      "id": "acd618b9-69ff-4b33-9f7d-2b0078162caa",
+      "name": "Obtener sectores"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c9d6fd6f-1955-466b-aa95-c1bf7eda1be0",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "={{ $('Loop Over Items').item.json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        112
+      ],
+      "id": "a967e712-d2c7-4fb4-9898-97deac95009d",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const id = $('Loop Over Items').first().json.id; // Ejemplo: \"test\"\nconst sector = $('Loop Over Items').first().json.title; // Ejemplo: \"test\"\n\nif (!/^[a-z_][a-z0-9_]*$/i.test(sector)) {\n  throw new Error(\"Nombre de sector inválido\");\n}\n\nconst documentsTable = `${sector}_documents`;\nconst chunksTable = `${sector}_chunks`;\nconst functionName = `match_${sector}_chunks`;\n\nconst sql = `\ndrop function if exists ${functionName};\ndrop table if exists ${chunksTable};\ndrop table if exists ${documentsTable};\ndelete from sectors where id = '${id}';\n`;\n\nreturn [{ json: { sql } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        96
+      ],
+      "id": "1602435b-10c1-43b5-925d-c8492b070967",
+      "name": "Script de Eliminacion"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1376,
+        128
+      ],
+      "id": "b7b644ef-d1c8-4d18-bd30-758a36f9b952",
+      "name": "Elimina Tabla RAG"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": "={{ $prevNode.name === 'Obtener sectores' }}"
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        368,
+        96
+      ],
+      "id": "2c9a6bd3-90b2-4302-b2db-7ad1ba60bef7",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.title }}",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "PEGAR_ID_CARPETA_DRIVE"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType"
+          ]
+        },
+        "authentication": "serviceAccount"
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        624,
+        112
+      ],
+      "id": "977877f5-6815-4eb7-9ad6-1c6b3ce09c0c",
+      "name": "Buscar Sector",
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "={{ $('Documento a eliminar').item.json.sector }}_documents",
+          "mode": "name"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $('Documento a eliminar').item.json.document_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1520,
+        912
+      ],
+      "id": "94fc1341-41f7-4fb2-aca3-253ecb144eca",
+      "name": "Delete Document1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM {{ $('Documento a eliminar').item.json.sector }}_chunks\nWHERE metadata->>'file_id' = '{{ $('Documento a eliminar').item.json.document_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1264,
+        880
+      ],
+      "id": "064965e4-5bf0-4a6c-a584-72ab26e29828",
+      "name": "Delete Chunks1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "={{ $json.sector }}_documents",
+          "mode": "name"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        112,
+        880
+      ],
+      "id": "44496e08-3279-40fd-b0ee-75bf5071996f",
+      "name": "Seleccionar documentos"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.title }}",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('Sector a actualizar').item.json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {},
+        "authentication": "serviceAccount"
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        560,
+        896
+      ],
+      "id": "16b98b03-6acd-4da6-bf3d-d3c8a4a2d1df",
+      "name": "Buscar documento",
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": "={{ $prevNode.name === 'Seleccionar documentos' }}"
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        336,
+        880
+      ],
+      "id": "3c5501e7-0676-42f1-9986-dca0288e4b25",
+      "name": "Loop Over Items3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ecf2a2b1-6ca9-491a-ab88-5efd8980f463",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        896
+      ],
+      "id": "f793f1f6-6c25-449f-962a-d2c19e98f7e1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "81949a51-a337-4e27-88db-c76d13fc6685",
+              "name": "sector",
+              "value": "={{ $('Sector a actualizar').item.json.sector }}",
+              "type": "string"
+            },
+            {
+              "id": "adaf6edd-d8e1-4441-a611-6d26540bac05",
+              "name": "document_id",
+              "value": "={{ $('Loop Over Items3').item.json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1008,
+        880
+      ],
+      "id": "6476fc31-5f21-400a-8efb-5b7754df71c8",
+      "name": "Documento a eliminar"
+    },
+    {
+      "parameters": {
+        "content": "## RAG - Elimina documentos no usados",
+        "height": 80,
+        "width": 1720,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        800
+      ],
+      "typeVersion": 1,
+      "id": "b3068d24-6395-45ab-80d6-0b01b5b7e2a5",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "=",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('Sector a actualizar').item.json.id }}",
+            "mode": "id"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": "={{ [\"id\",\"mimeType\",\"name\",\"modifiedTime\",\"webViewLink\"] }}"
+        },
+        "authentication": "serviceAccount"
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        496,
+        448
+      ],
+      "id": "9173ee24-bd1b-445d-83da-0bea2bc71b82",
+      "name": "Obtener archivos"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        304,
+        448
+      ],
+      "id": "a648b016-7b11-4358-9cf7-b9f9f744fd6d",
+      "name": "Crea tablas RAG"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $json.id;\nconst sector = $json.sector;\n\nif (!/^[a-z_][a-z0-9_]*$/i.test(sector)) {\n  throw new Error(\"Nombre de sector inválido\");\n}\n\nconst documentsTable = `${sector}_documents`;\nconst chunksTable = `${sector}_chunks`;\nconst functionName = `match_${sector}_chunks`;\n\nconst sql = `\n-- Insertar o actualizar el sector\ninsert into sectors (id, title)\nvalues ('${id}', '${sector}')\non conflict (id) do update set title = excluded.title;\n\n-- Crear tabla de documentos (nivel documento completo)\ncreate table if not exists ${documentsTable} (\n  id text primary key,\n  title text,\n  url text,\n  updated_at timestamptz,\n  created_at timestamp default now()\n);\n\n-- Crear tabla de chunks relacionados a documentos\ncreate table if not exists ${chunksTable} (\n  id bigserial primary key,\n  content text,\n  metadata jsonb,\n  embedding vector(3072)\n);\n\n-- Crear función de búsqueda sobre chunks\ncreate or replace function ${functionName} (\n  query_embedding vector(3072),\n  match_count int default null,\n  filter jsonb DEFAULT '{}'\n) returns table (\n  id bigint,\n  content text,\n  metadata jsonb,\n  similarity float\n)\nlanguage plpgsql\nas $$BODY$$\n#variable_conflict use_column\nbegin\n  return query\n  select\n    id,\n    content,\n    metadata,\n    1 - (${chunksTable}.embedding <=> query_embedding) as similarity\n  from ${chunksTable}\n  where metadata @> filter\n  order by ${chunksTable}.embedding <=> query_embedding\n  limit match_count;\nend;\n$$BODY$$;\n`;\n\nreturn {\n  json: {\n    sql,\n  },\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        448
+      ],
+      "id": "f98c8d20-2177-4f0b-a2d1-f57048dceb35",
+      "name": "Script de creacion",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "={{ $('Loop Over Items2').item.json.sector }}_documents",
+          "mode": "name"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "=id",
+              "value": "={{ $('Loop Over Items2').item.json.file_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1168,
+        576
+      ],
+      "id": "2621d3b3-87c4-4830-9ad5-ce3fdc03114a",
+      "name": "Buscar Archivo",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "notesInFlow": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": "={{ $prevNode.name === 'Archivo por revisar' }}"
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        960,
+        448
+      ],
+      "id": "7d5164c3-3c03-4a67-a27c-e2e83958341f",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "67aa4a10-dd16-49f2-9406-1415017bde0d",
+              "leftValue": "={{ $json.require_update }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        432
+      ],
+      "id": "c60ecdfa-47e2-443f-8d0e-f0b6482f6ab2",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45e95b33-79e5-4c86-8625-5318d01103dd",
+              "name": "sector",
+              "value": "={{ $('Archivo por revisar').item.json.sector }}",
+              "type": "string"
+            },
+            {
+              "id": "46a47b30-d8b3-4b95-9825-150c82cc52e5",
+              "name": "file_id",
+              "value": "={{ $('Archivo por revisar').item.json.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "6d42866c-05ab-4720-a4f4-8edfc4580d5b",
+              "name": "file_type",
+              "value": "={{ $('Archivo por revisar').item.json.file_type }}",
+              "type": "string"
+            },
+            {
+              "id": "c4acc692-b2ff-47db-acfa-61f17da02faa",
+              "name": "file_title",
+              "value": "={{ $('Archivo por revisar').item.json.file_title }}",
+              "type": "string"
+            },
+            {
+              "id": "292453e9-6abe-482d-b54c-a1bd685e5035",
+              "name": "file_url",
+              "value": "={{ $('Archivo por revisar').item.json.file_url }}",
+              "type": "string"
+            },
+            {
+              "id": "7fe2df32-4b65-4b50-8e7c-3003944bda29",
+              "name": "updated_at",
+              "value": "={{ $('Archivo por revisar').item.json.updated_at }}",
+              "type": "string"
+            },
+            {
+              "id": "b40fcaf2-5322-42cb-9bc7-78ae665ef331",
+              "name": "updated_at_bd",
+              "value": "={{ $json.updated_at ?? null}}",
+              "type": "string"
+            },
+            {
+              "id": "e0d28aec-e0f5-495c-9a3f-71658bea56e1",
+              "name": "require_update",
+              "value": "={{ !$json.updated_at || new Date($('Archivo por revisar').item.json.updated_at).getTime() !== new Date($json.updated_at).getTime() }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1392,
+        576
+      ],
+      "id": "80981d26-e25d-4abb-a68e-05a4241da7f2",
+      "name": "Archivo revisado"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f5c3036e-29f4-4e1b-8a3d-cf2cfdac4ac0",
+              "name": "sector",
+              "value": "={{ $('Sector a actualizar').item.json.sector }}",
+              "type": "string"
+            },
+            {
+              "id": "10646eae-ae46-4327-a4dc-9987c2d76173",
+              "name": "file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f4536df5-d0b1-4392-bf17-b8137fb31a44",
+              "name": "file_type",
+              "value": "={{ $json.mimeType }}",
+              "type": "string"
+            },
+            {
+              "id": "77d782de-169d-4a46-8a8e-a3831c04d90f",
+              "name": "file_title",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "9bde4d7f-e4f3-4ebd-9338-dce1350f9eab",
+              "name": "file_url",
+              "value": "={{ $json.webViewLink }}",
+              "type": "string"
+            },
+            {
+              "id": "8c069a62-f5ac-4bf7-bc8b-fba7c98b6b26",
+              "name": "updated_at",
+              "value": "={{ $json.modifiedTime }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2abe83fe-c6d6-4270-8733-007de7bca377",
+      "name": "Archivo por revisar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## RAG - Detecta documentos que se deben actualizar",
+        "height": 80,
+        "width": 1720
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        32,
+        336
+      ],
+      "typeVersion": 1,
+      "id": "77cd7d3f-e877-418f-a517-a9eeeb93f95a",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1344,
+        416
+      ],
+      "id": "c649743d-204f-43ae-9478-7598e0e2a606",
+      "name": "Diario"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const id = $json.id;\nconst sector = $json.sector;\n\nif (!/^[a-z_][a-z0-9_]*$/i.test(sector)) {\n  throw new Error(\"Nombre de sector inválido\");\n}\n\nconst documentsTable = `${sector}_documents`;\nconst chunksTable = `${sector}_chunks`;\nconst functionName = `match_${sector}_chunks`;\n\nconst sql = `\n-- Insertar o actualizar el sector\ninsert into sectors (id, title)\nvalues ('${id}', '${sector}')\non conflict (id) do update set title = excluded.title;\n\n-- Crear tabla de documentos (nivel documento completo)\ncreate table if not exists ${documentsTable} (\n  id text primary key,\n  title text,\n  url text,\n  updated_at timestamp,\n  created_at timestamp default now()\n);\n\n-- Crear tabla de chunks relacionados a documentos\ncreate table if not exists ${chunksTable} (\n  id bigserial primary key,\n  content text,\n  metadata jsonb,\n  embedding vector(1536)\n);\n\n-- Crear función de búsqueda sobre chunks\ncreate or replace function ${functionName} (\n  query_embedding vector(1536),\n  match_count int default null,\n  filter jsonb DEFAULT '{}'\n) returns table (\n  id bigint,\n  content text,\n  metadata jsonb,\n  similarity float\n)\nlanguage plpgsql\nas $$BODY$$\n#variable_conflict use_column\nbegin\n  return query\n  select\n    id,\n    content,\n    metadata,\n    1 - (${chunksTable}.embedding <=> query_embedding) as similarity\n  from ${chunksTable}\n  where metadata @> filter\n  order by ${chunksTable}.embedding <=> query_embedding\n  limit match_count;\nend;\n$$BODY$$;\n`;\n\nreturn {\n  json: {\n    sql,\n  },\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        640
+      ],
+      "id": "af8ec711-4541-47ed-9761-ee5c4488dee2",
+      "name": "Script de creacion1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "FutBI2APuNuvE6nq",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/FutBI2APuNuvE6nq",
+          "cachedResultName": "3.2 - Procesador de Archivos"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sector": "={{ $json.sector }}",
+            "file_id": "={{ $json.file_id }}",
+            "file_title": "={{ $json.file_title }}",
+            "file_type": "={{ $json.file_type }}",
+            "file_url": "={{ $json.file_url }}",
+            "updated_at": "={{ $json.updated_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "file_title",
+              "displayName": "file_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "file_type",
+              "displayName": "file_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "file_url",
+              "displayName": "file_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1728,
+        416
+      ],
+      "id": "df980abc-0362-4a05-9cc8-fae156486a8d",
+      "name": "Call '3.2 - Procesador de Archivos'"
+    }
+  ],
+  "connections": {
+    "Conocimiento": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear sectors": {
+      "main": [
+        [
+          {
+            "node": "Conocimiento",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Obtener sectores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sector a actualizar": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Seleccionar documentos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Script de creacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items5": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Sector a actualizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener sectores": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Script de Eliminacion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script de Eliminacion": {
+      "main": [
+        [
+          {
+            "node": "Elimina Tabla RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Elimina Tabla RAG": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Buscar Sector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Sector": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Document1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Chunks1": {
+      "main": [
+        [
+          {
+            "node": "Delete Document1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seleccionar documentos": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar documento": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items3": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Buscar documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Documento a eliminar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documento a eliminar": {
+      "main": [
+        [
+          {
+            "node": "Delete Chunks1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener archivos": {
+      "main": [
+        [
+          {
+            "node": "Archivo por revisar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crea tablas RAG": {
+      "main": [
+        [
+          {
+            "node": "Obtener archivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script de creacion": {
+      "main": [
+        [
+          {
+            "node": "Crea tablas RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Archivo": {
+      "main": [
+        [
+          {
+            "node": "Archivo revisado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Buscar Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archivo revisado": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archivo por revisar": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Call '3.2 - Procesador de Archivos'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diario": {
+      "main": [
+        [
+          {
+            "node": "Crear sectors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
