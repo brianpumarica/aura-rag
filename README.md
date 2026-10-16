@@ -8,14 +8,6 @@ Corre en tu PC con Docker: n8n + Postgres (pgvector) + LobeChat + Gemini.
 
 ---
 
-## Demo en video
-
-[![Ver demo de AURA RAG en YouTube](https://img.youtube.com/vi/-sMulYEfj0A/sddefault.jpg)](https://www.youtube.com/watch?v=-sMulYEfj0A)
-
-> 📹 **Video de demostración:** [Ver en YouTube](https://www.youtube.com/watch?v=-sMulYEfj0A) o reproducir el archivo del repositorio: [`demo/demo-aura.mp4`](demo/demo-aura.mp4)
-
----
-
 ## ¿Qué hace?
 
 Le hacés una pregunta al chat ("¿con cuántos días de anticipación se piden las vacaciones?") y responde usando **solo** los PDF y Google Docs que pusiste en una carpeta de Drive, citando los documentos usados:
