@@ -18,3 +18,12 @@ aura_data/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Material de grabacion (pesado y con respaldos)
+demo/_work/
+
+# Documentos y notas internas
+PUBLICACION
+PUBLICACION*
+APRENDIZAJES
+APRENDIZAJES*

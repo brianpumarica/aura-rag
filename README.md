@@ -3,7 +3,16 @@
 **Un chat que responde con tus propios documentos de Google Drive, y te dice de qué documento sacó cada respuesta.**
 Corre en tu PC con Docker: n8n + Postgres (pgvector) + LobeChat + Gemini.
 
-> 👉 **[Empezar: guía paso a paso](GUIA.md)** (pensada para seguirla sin conocimientos técnicos)
+> 👉 **[Empezar: guía paso a paso](GUIA.md)** (pensada para seguirla sin conocimientos técnicos)  
+> 🎥 **[Ver video demo en YouTube](https://www.youtube.com/watch?v=-sMulYEfj0A)**
+
+---
+
+## Demo en video
+
+[![Ver demo de AURA RAG en YouTube](https://img.youtube.com/vi/-sMulYEfj0A/sddefault.jpg)](https://www.youtube.com/watch?v=-sMulYEfj0A)
+
+> 📹 **Video de demostración:** [Ver en YouTube](https://www.youtube.com/watch?v=-sMulYEfj0A) o reproducir el archivo del repositorio: [`demo/demo-aura.mp4`](demo/demo-aura.mp4)
 
 ---
 
@@ -36,6 +45,45 @@ Pregunta → LobeChat → n8n → agente que elige el sector → búsqueda en tu
 - Cada respuesta tarda cerca de **30 segundos**.
 - La guía está en español y para Windows; n8n y LobeChat se usan en su interfaz en inglés.
 - Los sectores y el prompt del orquestador son un ejemplo: hay que adaptarlos a tu caso (ver [Personalizar](GUIA.md#personalizar)).
+
+---
+
+## Cómo está hecho (para quien quiere ver por dentro)
+
+### Los 5 workflows (carpeta [`workflows/`](workflows))
+
+| # | Workflow | Para qué sirve |
+|---|---|---|
+| 1 | **Entrada LobeChat / Gradio** | Recibe la pregunta del chat por un webhook, se la pasa al orquestador y devuelve la respuesta. |
+| 2.1 | **Cerebro Orquestador** | Un agente (nodo *AI Agent*) que lee la pregunta y elige a qué sector mandarla; cada sector es una herramienta. |
+| 2.2 | **Cerebro Especializado** | Un agente que busca en la base vectorial del sector elegido y responde citando los documentos usados. |
+| 3.1 | **Sincronizador y Limpiador** | Cada día compara tu carpeta de Drive con la base: crea sectores nuevos, detecta documentos nuevos, modificados o borrados y limpia lo que sobra. |
+| 3.2 | **Procesador de Archivos** | Descarga cada PDF o Google Doc, lo corta en fragmentos, genera sus embeddings y los guarda en pgvector. |
+
+### Herramientas y conectores
+
+| Pieza | Qué hace | Costo |
+|---|---|---|
+| **n8n** (nodo *AI Agent*, *Tool Workflow*, memoria) | Orquesta todo; corre en Docker en tu PC. | Gratis para uso interno (ver licencias). |
+| **Google Gemini** (modelo de chat + embeddings) | Entiende la pregunta, redacta la respuesta y convierte los textos en vectores. | Clave de Google AI Studio; tiene un nivel gratuito con límites de uso y uno de pago. Revisá los límites vigentes en la web de Google. |
+| **Google Drive** (cuenta de servicio, rol Lector) | Fuente de los documentos, solo lectura. | Gratis con una cuenta de Google. |
+| **Postgres + pgvector** | Guarda documentos, fragmentos y memoria del chat. | Gratis (local, en Docker). |
+| **LobeChat** (+ ParadeDB, Redis, RustFS) | La interfaz de chat. | Gratis (local, en Docker). |
+
+### Claves que vas a necesitar
+
+| Clave | Dónde se usa | Costo |
+|---|---|---|
+| API key de Gemini | Credencial *Google Gemini(PaLM) Api* en n8n | Gratis con límites / pago |
+| JSON de la cuenta de servicio de Google | Credencial *Google Service Account* en n8n (Drive) | Gratis |
+| Usuario y contraseña de Postgres | Archivo `.env` y credencial *Postgres* en n8n | Las defines vos |
+| `N8N_ENCRYPTION_KEY`, `AUTH_SECRET`, etc. | Archivo `.env` | Las generas vos |
+
+Ninguna clave se sube al repositorio: el `.env` y el JSON de Google están en el `.gitignore`.
+
+### ¿Dudas o querés contarme cómo te fue?
+
+Escribime por LinkedIn: **https://ar.linkedin.com/in/brian-martin-pumarica**
 
 ---
 
